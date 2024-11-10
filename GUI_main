@@ -1,1 +1,64 @@
+import tkinter as tk
+from tkinter import ttk
+import board
+import busio
+import adafruit_mcp9808
+import RPi.GPIO as GPIO
+from time import sleep
 
+class WindmillGUI:
+    def __init__(self, master):
+        self.master = master
+        master.title("Windmill Control")
+
+        # Temperature sensor setup
+        i2c = busio.I2C(board.SCL, board.SDA)
+        self.temp_sensor = adafruit_mcp9808.MCP9808(i2c)
+
+        # PWM LED setup
+        self.led_pin = 18
+        GPIO.setmode(GPIO.BCM)
+        GPIO.setup(self.led_pin, GPIO.OUT)
+        self.pwm = GPIO.PWM(self.led_pin, 1000)
+        self.pwm.start(0)
+
+        # Stepper motor setup
+        self.step_pin = 23
+        self.dir_pin = 24
+        GPIO.setup(self.step_pin, GPIO.OUT)
+        GPIO.setup(self.dir_pin, GPIO.OUT)
+
+        # GUI elements
+        self.temp_label = ttk.Label(master, text="Temperature: ")
+        self.temp_label.grid(row=0, column=0, padx=10, pady=10)
+
+        self.led_scale = ttk.Scale(master, from_=0, to=100, orient=tk.HORIZONTAL, command=self.set_led_brightness)
+        self.led_scale.grid(row=1, column=0, padx=10, pady=10)
+
+        self.speed_scale = ttk.Scale(master, from_=0, to=100, orient=tk.HORIZONTAL, command=self.set_motor_speed)
+        self.speed_scale.grid(row=2, column=0, padx=10, pady=10)
+
+        self.direction_button = ttk.Button(master, text="Change Direction", command=self.change_direction)
+        self.direction_button.grid(row=3, column=0, padx=10, pady=10)
+
+        self.update_temperature()
+
+    def update_temperature(self):
+        temp = self.temp_sensor.temperature
+        self.temp_label.config(text=f"Temperature: {temp:.2f}°C")
+        self.master.after(1000, self.update_temperature)
+
+    def set_led_brightness(self, value):
+        self.pwm.ChangeDutyCycle(float(value))
+
+    def set_motor_speed(self, value):
+        # Implement motor speed control here
+        pass
+
+    def change_direction(self):
+        # Implement motor direction change here
+        pass
+
+root = tk.Tk()
+gui = WindmillGUI(root)
+root.mainloop()
