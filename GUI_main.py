@@ -1,5 +1,3 @@
-*.py linguist-language=Python
-
 import tkinter as tk
 from tkinter import ttk
 import board
