@@ -23,6 +23,11 @@ import time
 def get_temp(): # placeholder function to imitate the MCP9808
     return round(25 + 5*random.random(), 2) 
 
+'''
+Mock stepper class --> so we can test the interface 
+without stepper connected
+'''
+
 class MockNema17:
     def __init__(self, A1_pin, A2_pin, B1_pin, B2_pin):
         self.A1 = A1_pin
@@ -30,7 +35,7 @@ class MockNema17:
         self.B1 = B1_pin
         self.B2 = B2_pin
 
-    def rotate_full_step(self, rpm):
+    def rotate_full_step(self, rpm): # dummy rotation functions
         print(f"Rotating full step at {rpm} RPM")
 
     def rotate_full_step_ccw(self, rpm):
@@ -45,16 +50,23 @@ class MockNema17:
     def stop(self):
         print("Motor stopped")
 
-class WindmillGUI:
+class WindmillGUI: # create a class for the graphical user interface
     def __init__(self, master):
         self.master = master
         master.title("Windmill Control")
-        ctk.set_appearance_mode("light")
+        ctk.set_appearance_mode("light") # set themes and colors
         ctk.set_default_color_theme("blue")
 
-        self.motor = MockNema17(A1_pin=17, A2_pin=18, B1_pin=27, B2_pin=22)
-        self.running = False
+        self.motor = MockNema17(A1_pin=17, A2_pin=18, B1_pin=27, B2_pin=22) # create new motor object
+        self.running = False # automatically NOT on 
         self.motor_thread = None
+
+        ''' 
+        - here, I create frames (dedicated space in the GUI window) 
+          to house widgets --> buttons/sliders etc.
+        - it is important to note that for a widget to "do" something, 
+          it must call a function --> define those later
+        '''
 
         frame = ctk.CTkFrame(master, corner_radius=20)
         frame.pack(padx=30, pady=30, fill="both", expand=True)
@@ -88,7 +100,8 @@ class WindmillGUI:
         self.led_slider = ctk.CTkSlider(brightness_frame, from_=0, to=100, command=self.update_led_entry)
         self.led_slider.pack(side="left", padx=(0, 10), expand=True)
 
-        # Direction control
+        # Direction control radio buttons
+        # radio button means only one button can be on at a time --> ensures motor is either ccw OR cw, not both
         direction_frame = ctk.CTkFrame(frame)
         direction_frame.pack(pady=10, fill="x")
         ctk.CTkLabel(direction_frame, text="Direction:", font=("Helvetica", 14)).pack(side="left", padx=(0, 10))
@@ -124,12 +137,14 @@ class WindmillGUI:
         self.led_entry.bind("<Return>", lambda event: self.update_slider(self.led_entry, self.led_slider, "LED brightness"))
         self.speed_entry.bind("<Return>", lambda event: self.update_slider(self.speed_entry, self.speed_slider, "Motor speed"))
 
+    # update the text box if the slider is moved
     def update_led_entry(self, value):
         self.led_var.set(f"{float(value):.1f}")
 
     def update_speed_entry(self, value):
         self.speed_var.set(f"{float(value):.1f}")
 
+    # update the slider if the text box is edited
     def update_slider(self, entry, slider, control_name):
         try:
             value = float(entry.get())
@@ -144,9 +159,11 @@ class WindmillGUI:
             entry.delete(0, ctk.END)
             entry.insert(0, str(slider.get()))
 
+    # error message
     def show_error_message(self, message):
         CTkMessagebox(title="Error", message=message, icon="cancel")
 
+    # function to check for changes and restart the motor with new settings
     def apply_changes(self):
         rpm = float(self.speed_var.get())
         direction = self.direction_var.get()
@@ -169,6 +186,7 @@ class WindmillGUI:
         status = f"RPM: {rpm:.1f}, Direction: {direction}, Mode: {step_mode}"
         self.status_var.set(status)
 
+    # turn motor on/off
     def toggle_power(self):
         if self.power_var.get():
             self.running = True
@@ -188,6 +206,7 @@ class WindmillGUI:
             # Motor continues to run with the last applied settings
             time.sleep(0.01)
 
+# run the GUI if this file is being executed
 if __name__ == "__main__":
     root = ctk.CTk()
     gui = WindmillGUI(root)
