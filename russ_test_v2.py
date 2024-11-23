@@ -8,11 +8,10 @@ import time
 from NEMA17mod1 import Nema17  # Import the Nema17 class from the driver file
 import multiprocessing
 
-
 '''
-i made a few changes here... maybe this will work
+this one is straight from perplexity so no guarantees!
+good luck!
 '''
-
 
 def get_temp():
     return round(25 + 5 * random.random(), 2)
@@ -46,7 +45,7 @@ class WindmillGUI:
 
         ctk.CTkLabel(speed_frame, text="Motor Speed (RPM):", font=("Helvetica", 14)).pack(side="left", padx=(0, 10))
 
-        self.speed_var = ctk.StringVar(value="60.0")
+        self.speed_var = ctk.StringVar(value="10.0")
         self.speed_entry = ctk.CTkEntry(speed_frame, textvariable=self.speed_var, width=50)
         self.speed_entry.pack(side="left", padx=(0, 10))
 
@@ -104,16 +103,6 @@ class WindmillGUI:
        except ValueError:
            messagebox.showerror("Error","Please enter a valid number between (1-150)")
 
-    def update_slider(self,event):
-       try:
-           value=float(event.get())
-           if 1 <= value <= 150:
-               self.speed_slider.set(value) 
-           else:
-               raise ValueError("Invalid input")
-       except ValueError:
-           messagebox.showerror("Error","Please enter a valid number between (1-150).")
-
     def show_error_message(self,message):
        messagebox.showerror("Error" , message)
 
@@ -126,20 +115,21 @@ class WindmillGUI:
             rpm = float(self.speed_var.get())
             direction = self.direction_var.get()
             step_mode = self.step_mode_var.get()
-            print('got values')
             
             if rpm < 1 or rpm > 150:
                 raise ValueError("RPM must be between 1-150")
             
             with threading.Lock():
-                print('begin threading lock')
+                print('Applying changes...')
                 self.motor_settings['rpm'] = rpm
                 self.motor_settings['direction'] = direction
                 self.motor_settings['step_mode'] = step_mode
                 
-            self.motor_process.terminate() #multiprocess
+            if hasattr(self, 'motor_process') and self.motor_process.is_alive():
+                self.motor_process.terminate()  # Terminate previous motor process
+            
             self.motor.sleep()
-            print("test")
+            print("Motor sleeping...")
             self.start_motor()
         
             status = f"RPM: {rpm:.2f}, Direction: {direction}, Mode: {step_mode}"
@@ -148,49 +138,57 @@ class WindmillGUI:
         except ValueError as e:
             messagebox.showerror("Error", str(e))
 
-      def toggle_power(self):
+    def toggle_power(self):
         self.on = self.power_var.get()  # Update 'on' based on switch state
         if self.on:
-            print('motor on')
+            print('Motor ON')
             self.start_motor()
+            self.status_var.set("Motor Running")
         else:
-            print('motor off')
-            self.motor_process.terminate()  # Ensure motor process is terminated
+            print('Motor OFF')
+            if hasattr(self, 'motor_process') and self.motor_process.is_alive():
+                self.motor_process.terminate()  # Ensure motor process is terminated
+                print("Motor process terminated.")
             self.motor.sleep()
+            self.status_var.set("Motor Stopped")
 
     def start_motor(self):
-        print('on')
-        self.motor_process = multiprocessing.Process(target=self.run_motor) #multiprocess
-        self.motor_process.start() #type shit
-        self.status_var.set("Motor Running")
+        print('Starting motor...')
+        
+        # Start motor in a separate process
+        if not hasattr(self, 'motor_process') or not self.motor_process.is_alive():
+            self.motor_process = multiprocessing.Process(target=self.run_motor)
+            self.motor_process.start()
 
     def run_motor(self):
         rpm = self.motor_settings['rpm']
         direction = self.motor_settings['direction']
-        step_mode = self.motor_settings['step_mode']
-        self.motor.wake()
-        while self.on:  # Use 'self.on' instead of 'on'
-        while on:
-            if step_mode == "Full":
-                if direction == "CW":
+        
+        print(f"Running motor at {rpm} RPM in {direction} direction.")
+        
+        while self.on:  
+            if direction == "CW":
+                if self.motor_settings['step_mode'] == "Full":
                     self.motor.rotate_full_step(rpm)
-                    print(rpm)
                 else:
-                    self.motor.rotate_full_step_ccw(rpm)
-            else:
-                if direction == "CW":
                     self.motor.rotate_half_step(rpm)
+            else:  
+                if self.motor_settings['step_mode'] == "Full":
+                    self.motor.rotate_full_step_ccw(rpm)
                 else:
                     self.motor.rotate_half_step_ccw(rpm)
 
 
 if __name__ == "__main__":
     try:
-        GPIO.cleanup()
+        GPIO.setmode(GPIO.BCM)  # Set GPIO mode (BCM or BOARD)
+        
         root = ctk.CTk()
         gui = WindmillGUI(root)
         root.mainloop()
+       
     except KeyboardInterrupt:
-        print('Exiting program')
+       print('Exiting program')
+       
     finally:
-        GPIO.cleanup()
+       GPIO.cleanup()  # Clean up GPIO on exit

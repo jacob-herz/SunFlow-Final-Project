@@ -183,9 +183,9 @@ if __name__ == "__main__":
     try:
         GPIO.setmode(GPIO.BCM)  # Set GPIO mode (BCM or BOARD)
         
-       root = ctk.CTk()
-       gui = WindmillGUI(root)
-       root.mainloop()
+        root = ctk.CTk()
+        gui = WindmillGUI(root)
+        root.mainloop()
        
     except KeyboardInterrupt:
        print('Exiting program')
