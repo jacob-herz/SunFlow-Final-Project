@@ -24,6 +24,9 @@ SLP --> GPIO 23
 SDA --> GPIO 2
 SCL --> GPIO 3
 
+**Speaker**
+Speaker USB --> any RPi USB port
+
 Ground rail from white breakout board --> RPI GND
 
 **Usage**
