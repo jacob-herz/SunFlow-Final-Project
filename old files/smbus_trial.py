@@ -1,6 +1,10 @@
 import smbus2
 import time
 
+'''
+use this file to troubleshoot RPI issues with smbus
+'''
+
 # Define I2C bus and PCA9685 address
 I2C_BUS = 1  # I2C bus number (1 for Raspberry Pi)
 PCA9685_ADDRESS = 0x40  # Default I2C address
