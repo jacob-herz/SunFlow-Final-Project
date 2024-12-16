@@ -9,8 +9,7 @@ from NEMA17mod1 import Nema17  # Import the Nema17 class from the driver file
 import multiprocessing
 
 '''
-this one is straight from perplexity so no guarantees!
-good luck!
+only motor control and GUI, not LEDs or anything
 '''
 
 def get_temp():
